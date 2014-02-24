@@ -42,13 +42,21 @@ class Game(object):
         self.cam = camera.Camera(eye=np.array([0,0,10]))
         # Vertex Transformation Matrices (Default)
         trans = transform.Transform()
-#        trans.rotate_y(np.deg2rad(10))
+        trans.rotate_y(np.deg2rad(10))
         self.Model = trans.matrix
         self.View = self.cam.view_matrix()
 #        self.Projection = util.orthographic(*self.viewbox)
         self.Projection = util.frustrum(*self.viewbox)
         # Light
+        self.Normal = np.identity(3, 'f')
         self.Ambient = np.array([0.4,0.4,0.4,1], 'f')
+#        self.LightColor = np.ones(3, 'f')
+        self.LightColor = np.array([0,0,1], 'f')
+        self.LightDirection = np.array([0,0,1], 'f')
+        self.HalfVector = np.array([0,0,-1], 'f')
+        self.Shininess = 0.8;
+        self.Strength = 1.;
+
         # Models (later to be scene graph)
         self.models = []
         for pardir, subdirs, files in os.walk(MODEL_DIR):
@@ -89,7 +97,18 @@ class Game(object):
                                         gl.GL_FRAGMENT_SHADER)
         fragment_shader.compile()
         self.shaders['std_fragment_shader'] = fragment_shader
-        program = shader.Program(vertex_shader, fragment_shader)
+        vertex_shader_light = shader.Shader(src.VERTEX_SHADER_LIGHT,
+                                            gl.GL_VERTEX_SHADER)
+        vertex_shader_light.compile()
+        self.shaders['light_vertex'] = vertex_shader_light
+        fragment_shader_light = shader.Shader(src.FRAGMENT_SHADER_LIGHT,
+                                              gl.GL_FRAGMENT_SHADER)
+        fragment_shader_light.compile()
+        self.shaders['light_fragment'] = fragment_shader_light
+        #
+        program = shader.Program(vertex_shader_light, fragment_shader_light)
+
+
         # Before linking we need to bind attribute locations
         program.bind_attrib_location(0, 'vPos')
         program.bind_attrib_location(1, 'vCol')
@@ -105,7 +124,14 @@ class Game(object):
         self.uniforms['View'] =  gl.glGetUniformLocation(pid, 'View')
         self.uniforms['Model'] =  gl.glGetUniformLocation(pid, 'Model')
         self.uniforms['Projection'] = gl.glGetUniformLocation(pid, 'Projection')
+        self.uniforms['Normal'] = gl.glGetUniformLocation(pid, 'Normal')
         self.uniforms['Ambient'] = gl.glGetUniformLocation(pid, 'Ambient')
+        self.uniforms['LightColor'] = gl.glGetUniformLocation(pid, 'LightColor')
+        self.uniforms['LightDirection'] = gl.glGetUniformLocation(pid,
+                                                              'LightDirection')
+        self.uniforms['HalfVector'] = gl.glGetUniformLocation(pid, 'HalfVector')
+        self.uniforms['Shininess'] = gl.glGetUniformLocation(pid, 'Shininess')
+        self.uniforms['Strength'] = gl.glGetUniformLocation(pid, 'Strength')
 
     #---------------------------------------
     # Init the whole system
@@ -157,7 +183,15 @@ class Game(object):
             gl.glUniformMatrix4fv(self.uniforms['Model'], 1, True, self.Model)
             gl.glUniformMatrix4fv(self.uniforms['Projection'], 1, True,
                                   self.Projection)
+            gl.glUniformMatrix3fv(self.uniforms['Normal'], 1, True,
+                                  self.Normal)
             gl.glUniform4f(self.uniforms['Ambient'], *self.Ambient)
+            gl.glUniform3f(self.uniforms['LightColor'], *self.LightColor)
+            gl.glUniform3f(self.uniforms['LightDirection'],
+                                         *self.LightDirection)
+            gl.glUniform3f(self.uniforms['HalfVector'], *self.HalfVector)
+            gl.glUniform1f(self.uniforms['Shininess'], self.Shininess)
+            gl.glUniform1f(self.uniforms['Strength'], self.Strength)
 
             # Bind vbo
             m.vbo.bind()
