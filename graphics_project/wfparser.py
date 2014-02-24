@@ -1,4 +1,3 @@
-#import numpy as np
 #-------------------------------------------------------------------------------
 WAVEFRONT_EXT = '.obj'
 #-------------------------------------------------------------------------------
@@ -14,7 +13,5 @@ def read(filename):
         for line in fp:
             ln = line.strip()
             if not ln.startswith('v'): continue
-#            vertices.append(map(float, ln.split(' ')[1:]))
-            vertices.append(ln.split(' ')[1:])
-#    return WaveFrontModel(np.array(vertices))
+            vertices.append(ln.split()[1:])
     return WaveFrontModel(vertices)
