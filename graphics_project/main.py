@@ -40,6 +40,8 @@ class Game(object):
         self.Model = np.identity(4, 'f')
         self.View = self.cam.view_matrix()
         self.Projection = util.orthographic(*self.spacebox)
+        # Light
+        self.Ambient = np.array([0.4,0.4,0.4,1], 'f')
         # Models (later to be scene graph)
         self.models = []
         for pardir, subdirs, files in os.walk(MODEL_DIR):
@@ -96,6 +98,7 @@ class Game(object):
         self.uniforms['View'] =  gl.glGetUniformLocation(pid, 'View')
         self.uniforms['Model'] =  gl.glGetUniformLocation(pid, 'Model')
         self.uniforms['Projection'] = gl.glGetUniformLocation(pid, 'Projection')
+        self.uniforms['Ambient'] = gl.glGetUniformLocation(pid, 'Ambient')
 
     #---------------------------------------
     # Init the whole system
@@ -147,6 +150,8 @@ class Game(object):
             gl.glUniformMatrix4fv(self.uniforms['Model'], 1, True, self.Model)
             gl.glUniformMatrix4fv(self.uniforms['Projection'], 1, True,
                                   self.Projection)
+            gl.glUniform4f(self.uniforms['Ambient'], *self.Ambient)
+
             # Bind vbo
             m.vbo.bind()
             gl.glEnableVertexAttribArray(0)
