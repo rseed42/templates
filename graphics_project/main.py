@@ -62,19 +62,6 @@ class Game(object):
         self.shaders = {}
         self.programs = {}
 
-#    def load_model(self, model_dir):
-#        """ Load model from object file
-#        """
-#        for fn in os.listdir(model_dir):
-#            # Assuming only one file
-#            if not fn.endswith(wfparser.WAVEFRONT_EXT): continue
-#            wfmodel = wfparser.read(os.path.join(model_dir, fn))
-#            m = model.Model(fn.split('.')[0])
-#            m.load_vertices(wfmodel.vertices)
-##            print m.vertex_array
-#            return m
-#        return None
-
     def load_model(self, model_dir):
         """ Load model from object file
         """
