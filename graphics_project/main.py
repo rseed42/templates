@@ -158,22 +158,6 @@ class Game(object):
             gl.glDisableClientState(gl.GL_COLOR_ARRAY)
             # Deactivate shader
             gl.glUseProgram(0)
-    #            try:
-    #                m.vbo.bind()
-    #                try:
-    #                    # Vertex Position
-    #                    gl.glEnableVertexAttribArray(0)
-    #                    gl.glVertexAttribPointer(0, 4, gl.GL_FLOAT, gl.GL_FALSE,
-    #                                             32, m.vbo)
-    #                    gl.glDrawArrays(m.primitive, m.vertex_start, m.vertex_end)
-    #                finally:
-    #                    gl.glDisableVertexAttribArray(0)
-    ##                    gl.glDisableVertexAttribArray(1)
-    #                    m.vbo.unbind()
-    ##                    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-    ##                    gl.glDisableClientState(gl.GL_COLOR_ARRAY)
-    #            finally:
-    #                shaders.glUseProgram(0)
 
         # Double buffering
         sdl.SDL_GL_SwapWindow(self.window)
