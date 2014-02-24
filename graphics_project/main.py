@@ -30,7 +30,7 @@ class Game(object):
         self.window = None
         self.glcontext = None
         self.running = True
-        self.spacebox = (-10,10,-10, 10, -10, 10)
+        self.spacebox = (-3, 3, -3, 3, -3, 3)
 
         # Transformation matrices, etc. that are passed to shaders
         self.uniforms = {}
