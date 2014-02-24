@@ -46,6 +46,7 @@ class Game(object):
         for pardir, subdirs, files in os.walk(MODEL_DIR):
             if pardir != MODEL_DIR: continue
             for subdir in subdirs:
+                if subdir.startswith('-'): continue
                 model = self.load_model(os.path.join(pardir, subdir))
                 if not model: continue
                 self.models.append(model)
