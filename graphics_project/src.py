@@ -3,9 +3,7 @@ VERTEX_SHADER = """#version 130
 uniform mat4 View, Model, Projection;
 in vec4 Vertex;
 void main(){
-//    gl_Position = View * Model * Projection * Vertex;
-//    gl_Position = Projection * View * Model * Vertex;
-     gl_Position = Projection * Vertex;
+     gl_Position = Projection * View * Model * Vertex;
 }
 """
 FRAGMENT_SHADER = """#version 130
