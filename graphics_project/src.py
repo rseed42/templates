@@ -12,9 +12,10 @@ void main(){
 FRAGMENT_SHADER = """#version 130
 uniform vec4 Ambient;
 in vec4 vColor;
+out vec4 FragColor;
 void main(){
-    vec4 scatteredLight = Ambient; // Only light
-    // modulate surface color with light, but saturate at white
-    gl_FragColor = min(vColor * scatteredLight, vec4(1.0));
+    vec3 scatteredLight = vec3(Ambient.rgb);
+    vec3 rgb = min(vColor.rgb * scatteredLight, vec3(1.0));
+    FragColor = vec4(rgb, vColor.a);
 }
 """
