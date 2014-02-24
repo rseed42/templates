@@ -3,6 +3,7 @@ VERTEX_SHADER = """#version 130
 uniform mat4 View, Model, Projection;
 in vec4 vPos;
 in vec4 vCol;
+in vec4 vNorm;
 out vec4 vColor;
 void main(){
      gl_Position = Projection * View * Model * vPos;

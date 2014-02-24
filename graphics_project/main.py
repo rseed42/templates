@@ -106,6 +106,7 @@ class Game(object):
         # Before linking we need to bind attribute locations
         program.bind_attrib_location(0, 'vPos')
         program.bind_attrib_location(1, 'vCol')
+        program.bind_attrib_location(2, 'vNorm')
         # We are ready
         program.link()
         self.programs['std_program'] = program
@@ -175,13 +176,16 @@ class Game(object):
             m.vbo.bind()
             gl.glEnableVertexAttribArray(0)
             gl.glEnableVertexAttribArray(1)
-            gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,32,m.vbo)
-            gl.glVertexAttribPointer(1,4,gl.GL_FLOAT,gl.GL_FALSE,32,m.vbo+16)
+            gl.glEnableVertexAttribArray(2)
+            gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,48,m.vbo)
+            gl.glVertexAttribPointer(1,4,gl.GL_FLOAT,gl.GL_FALSE,48,m.vbo+16)
+            gl.glVertexAttribPointer(2,4,gl.GL_FLOAT,gl.GL_FALSE,48,m.vbo+32)
             # Draw primitive
             gl.glDrawArrays(gl.GL_TRIANGLES, m.start_id, m.end_id)
             m.vbo.unbind()
             gl.glDisableVertexAttribArray(0)
             gl.glDisableVertexAttribArray(1)
+            gl.glDisableVertexAttribArray(2)
             # Deactivate shader program
             gl.glUseProgram(0)
 
