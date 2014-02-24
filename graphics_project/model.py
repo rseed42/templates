@@ -9,10 +9,17 @@ class Model(object):
         self.name = name
         self.primitive = primitive
         self.vertices = []
+        self.data_array = []
+        self.start_id = 0
+        self.end_id = 0
         self.vertex_start = 0
         self.vertex_end = 0
         self.colors = []
         self.vbo = None
+
+    def load_data(self, data):
+        self.data_array = data
+        self.end_id = len(data)
 
     def load_vertices(self, vertices):
         """ Load vertices in homogenous coordinates
@@ -39,4 +46,5 @@ class Model(object):
 
 
     def create_vbo(self):
-        self.vbo = vbo.VBO(self.vertex_array, usage=gl.GL_STATIC_DRAW)
+        self.vbo = vbo.VBO(self.data_array, usage=gl.GL_STATIC_DRAW)
+#        print self.data_array

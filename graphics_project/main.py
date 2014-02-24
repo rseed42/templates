@@ -24,6 +24,7 @@ WND_FLAGS = sdl.SDL_WINDOW_OPENGL | sdl.SDL_WINDOW_SHOWN | \
             sdl.SDL_WINDOW_RESIZABLE
 MODEL_DIR = 'data'
 FOV_BOX_SIDE = 100
+MODEL_EXT = '.dat'
 #-------------------------------------------------------------------------------
 # A very simple opengl app
 #-------------------------------------------------------------------------------
@@ -41,7 +42,7 @@ class Game(object):
         self.cam = camera.Camera(eye=np.array([0,0,10]))
         # Vertex Transformation Matrices (Default)
         trans = transform.Transform()
-        trans.rotate_y(np.deg2rad(10))
+#        trans.rotate_y(np.deg2rad(10))
         self.Model = trans.matrix
         self.View = self.cam.view_matrix()
 #        self.Projection = util.orthographic(*self.viewbox)
@@ -61,16 +62,28 @@ class Game(object):
         self.shaders = {}
         self.programs = {}
 
+#    def load_model(self, model_dir):
+#        """ Load model from object file
+#        """
+#        for fn in os.listdir(model_dir):
+#            # Assuming only one file
+#            if not fn.endswith(wfparser.WAVEFRONT_EXT): continue
+#            wfmodel = wfparser.read(os.path.join(model_dir, fn))
+#            m = model.Model(fn.split('.')[0])
+#            m.load_vertices(wfmodel.vertices)
+##            print m.vertex_array
+#            return m
+#        return None
+
     def load_model(self, model_dir):
         """ Load model from object file
         """
         for fn in os.listdir(model_dir):
             # Assuming only one file
-            if not fn.endswith(wfparser.WAVEFRONT_EXT): continue
-            wfmodel = wfparser.read(os.path.join(model_dir, fn))
+            if not fn.endswith(MODEL_EXT): continue
+            data = np.loadtxt(os.path.join(model_dir, fn), 'f')
             m = model.Model(fn.split('.')[0])
-            m.load_vertices(wfmodel.vertices)
-#            print m.vertex_array
+            m.load_data(data)
             return m
         return None
 
@@ -165,7 +178,7 @@ class Game(object):
             gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,32,m.vbo)
             gl.glVertexAttribPointer(1,4,gl.GL_FLOAT,gl.GL_FALSE,32,m.vbo+16)
             # Draw primitive
-            gl.glDrawArrays(gl.GL_TRIANGLES, m.vertex_start, m.vertex_end)
+            gl.glDrawArrays(gl.GL_TRIANGLES, m.start_id, m.end_id)
             m.vbo.unbind()
             gl.glDisableVertexAttribArray(0)
             gl.glDisableVertexAttribArray(1)
