@@ -15,12 +15,13 @@ from OpenGL.GL import shaders
 import src
 import wfparser
 import model
+import camera
+import util
 #-------------------------------------------------------------------------------
 WND_SIZE = (800, 600)
 WND_FLAGS = sdl.SDL_WINDOW_OPENGL | sdl.SDL_WINDOW_SHOWN | \
             sdl.SDL_WINDOW_RESIZABLE
 MODEL_DIR = 'data'
-
 #-------------------------------------------------------------------------------
 # A very simple opengl app
 #-------------------------------------------------------------------------------
@@ -29,13 +30,17 @@ class Game(object):
         self.window = None
         self.glcontext = None
         self.running = True
+        self.spacebox = (-20,20,-20, 20, -20, 20)
+
         # Transformation matrices, etc. that are passed to shaders
         self.uniforms = {}
         #
-        self.View = np.identity(4, 'f')
+        self.cam = camera.Camera(eye=np.array([0,0,10]))
+        # Vertex Transformation Matrices (Default)
         self.Model = np.identity(4, 'f')
-        self.Projection = np.identity(4, 'f')
-        #
+        self.View = self.cam.view_matrix()
+#        self.View = np.identity(4, 'f')
+        self.Projection = util.orthographic(*self.spacebox)
         # Models (later to be scene graph)
         self.models = []
         for pardir, subdirs, files in os.walk(MODEL_DIR):

@@ -1,5 +1,7 @@
+import numpy as np
+#-------------------------------------------------------------------------------
 class Camera(object):
-    def __init__(self, eye=np.array([0,0,-1],'f'), target=np.zeros(3,'f'),
+    def __init__(self, eye=np.array([0,0,10],'f'), target=np.zeros(3,'f'),
                  up = np.array([0,0,1])):
         self.eye = eye
         self.target = target
@@ -13,6 +15,9 @@ class Camera(object):
     def view_matrix(self):
         """ eye, target, up are 3-vectors in world space
         """
+        mat = np.identity(4, 'f')
+        mat[0,3] = 0
+        return mat
         # Check the optimization later
         zaxis = self.normalize(self.eye - self.target)
         xaxis = self.normalize(np.cross(self.up, zaxis))
