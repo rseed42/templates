@@ -82,17 +82,21 @@ class Game(object):
         fragment_shader.compile()
         self.shaders['std_fragment_shader'] = fragment_shader
         program = shader.Program(vertex_shader, fragment_shader)
+        # Before linking we need to bind attribute locations
+        program.bind_attrib_location(0, 'vPos')
+        program.bind_attrib_location(1, 'vCol')
+        # We are ready
         program.link()
         self.programs['std_program'] = program
         # Prepare vertex buffer objects
         for m in self.models:
             m.create_vbo()
-
         # Shader parameters
         pid = self.programs['std_program'].program_id
         self.uniforms['View'] =  gl.glGetUniformLocation(pid, 'View')
         self.uniforms['Model'] =  gl.glGetUniformLocation(pid, 'Model')
         self.uniforms['Projection'] = gl.glGetUniformLocation(pid, 'Projection')
+
     #---------------------------------------
     # Init the whole system
     #---------------------------------------
@@ -145,15 +149,15 @@ class Game(object):
                                   self.Projection)
             # Bind vbo
             m.vbo.bind()
-            gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-            gl.glEnableClientState(gl.GL_COLOR_ARRAY)
-            gl.glVertexPointer(4, gl.GL_FLOAT, 32, m.vbo)
-            gl.glColorPointer(4, gl.GL_FLOAT, 32, m.vbo+16)
+            gl.glEnableVertexAttribArray(0)
+            gl.glEnableVertexAttribArray(1)
+            gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,32,m.vbo)
+            gl.glVertexAttribPointer(1,4,gl.GL_FLOAT,gl.GL_FALSE,32,m.vbo+16)
             # Draw primitive
             gl.glDrawArrays(gl.GL_TRIANGLES, m.vertex_start, m.vertex_end)
             m.vbo.unbind()
-            gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-            gl.glDisableClientState(gl.GL_COLOR_ARRAY)
+            gl.glDisableVertexAttribArray(0)
+            gl.glDisableVertexAttribArray(1)
             # Deactivate shader program
             gl.glUseProgram(0)
 
