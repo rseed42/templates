@@ -11,12 +11,13 @@ import numpy as np
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
 from OpenGL.arrays import vbo
-from OpenGL.GL import shaders
+#from OpenGL.GL import shaders
 import src
 import wfparser
 import model
 import camera
 import util
+import shader
 #-------------------------------------------------------------------------------
 WND_SIZE = (800, 600)
 WND_FLAGS = sdl.SDL_WINDOW_OPENGL | sdl.SDL_WINDOW_SHOWN | \
@@ -49,8 +50,9 @@ class Game(object):
                 model = self.load_model(os.path.join(pardir, subdir))
                 if not model: continue
                 self.models.append(model)
-        #
-        self.attrib = {}
+        # Keep track of shaders/programs
+        self.shaders = {}
+        self.programs = {}
 
     def load_model(self, model_dir):
         """ Load model from object file
@@ -72,29 +74,34 @@ class Game(object):
         # Viewport
         gl.glViewport(0,0,WND_SIZE[0], WND_SIZE[1])
         # Shaders
-        vertex_shader = shaders.compileShader(src.VERTEX_SHADER,
-                                              gl.GL_VERTEX_SHADER)
-        fragment_shader = shaders.compileShader(src.FRAGMENT_SHADER,
-                                                gl.GL_FRAGMENT_SHADER)
-        self.shader = shaders.compileProgram(vertex_shader, fragment_shader)
+
+        vertex_shader = shader.Shader(src.VERTEX_SHADER, gl.GL_VERTEX_SHADER)
+        vertex_shader.compile()
+        self.shaders['std_vertex_shader'] = vertex_shader
+        fragment_shader = shader.Shader(src.FRAGMENT_SHADER,
+                                        gl.GL_FRAGMENT_SHADER)
+        fragment_shader.compile()
+        self.shaders['std_fragment_shader'] = fragment_shader
+        program = shader.Program(vertex_shader, fragment_shader)
+        program.link()
+        self.programs['std_program'] = program
+
+
+#        vertex_shader = shaders.compileShader(src.VERTEX_SHADER,
+#                                              gl.GL_VERTEX_SHADER)
+#
+#        fragment_shader = shaders.compileShader(src.FRAGMENT_SHADER,
+#                                                gl.GL_FRAGMENT_SHADER)
+#        self.shader = shaders.compileProgram(vertex_shader, fragment_shader)
         # Prepare vertex buffer objects
         for m in self.models:
             m.create_vbo()
-#            print gl.glGetAttribLocation(self.shader, 'position')
-#            self.attrib[m] = {
-#                           'vPos' : gl.glGetAttribLocation(self.shader, 'vPos'),
-#                           'vCol' : gl.glGetAttribLocation(self.shader, 'vCol'),
-#            }
-#            print self.attrib[m]
 
         # Shader parameters
-        self.uniforms['View'] =  gl.glGetUniformLocation(self.shader, 'View')
-        self.uniforms['Model'] =  gl.glGetUniformLocation(self.shader, 'Model')
-        self.uniforms['Projection'] = gl.glGetUniformLocation(self.shader,
-                                                              'Projection')
-
-        print gl.glGetString(gl.GL_VERSION)
-        print gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION)
+        pid = self.programs['std_program'].program_id
+        self.uniforms['View'] =  gl.glGetUniformLocation(pid, 'View')
+        self.uniforms['Model'] =  gl.glGetUniformLocation(pid, 'Model')
+        self.uniforms['Projection'] = gl.glGetUniformLocation(pid, 'Projection')
     #---------------------------------------
     # Init the whole system
     #---------------------------------------
@@ -139,8 +146,9 @@ class Game(object):
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         for m in self.models:
             # 1. Use shaders for this vbo
-            shaders.glUseProgram(self.shader)
-            # (location, count, transpose, value)
+            self.programs['std_program'].use()
+#            shaders.glUseProgram(self.shader)
+#            # (location, count, transpose, value)
             gl.glUniformMatrix4fv(self.uniforms['View'], 1, True, self.View)
             gl.glUniformMatrix4fv(self.uniforms['Model'], 1, True, self.Model)
             gl.glUniformMatrix4fv(self.uniforms['Projection'], 1, True,
@@ -156,7 +164,7 @@ class Game(object):
             m.vbo.unbind()
             gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
             gl.glDisableClientState(gl.GL_COLOR_ARRAY)
-            # Deactivate shader
+            # Deactivate shader program
             gl.glUseProgram(0)
 
         # Double buffering

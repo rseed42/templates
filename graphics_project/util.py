@@ -1,5 +1,10 @@
+import OpenGL.GL as gl
 import numpy as np
 #-------------------------------------------------------------------------------
+def glinfo():
+    print gl.glGetString(gl.GL_VERSION)
+    print gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION)
+
 def orthographic(left, right, bottom, top, near, far):
     """ Orthographic projection
     """

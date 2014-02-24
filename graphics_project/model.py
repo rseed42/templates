@@ -32,7 +32,7 @@ class Model(object):
         self.vertex_array[0, 4:-1] = (1,0,0)
         self.vertex_array[1, 4:-1] = (0,1,0)
         self.vertex_array[2, 4:-1] = (0,0,1)
-        print self.vertex_array
+#        print self.vertex_array
 
     def create_vbo(self):
         self.vbo = vbo.VBO(self.vertex_array, usage=gl.GL_STATIC_DRAW)
