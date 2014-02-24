@@ -1,5 +1,6 @@
 from OpenGL.arrays import vbo
 import OpenGL.GL as gl
+import numpy as np
 #-------------------------------------------------------------------------------
 class Model(object):
     """
@@ -13,7 +14,14 @@ class Model(object):
         self.vbo = None
 
     def load_vertices(self, vertices):
-        self.vertices = vertices
+        """ Load vertices in homogenous coordinates
+            Beware that 'f' means 32-bit floats and
+            the vertices we receive from the wavefront objects
+            are automatically converted from strings to float32s
+        """
+        self.vertices = np.zeros((len(vertices), 4), 'f')
+        self.vertices[:,-1] = 1
+        self.vertices[:,:3] = vertices
         # By default show all vertices
         self.vertex_end = len(vertices)
 
