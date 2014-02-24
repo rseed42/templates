@@ -11,7 +11,6 @@ import numpy as np
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
 from OpenGL.arrays import vbo
-#from OpenGL.GL import shaders
 import src
 import wfparser
 import model
@@ -85,14 +84,6 @@ class Game(object):
         program = shader.Program(vertex_shader, fragment_shader)
         program.link()
         self.programs['std_program'] = program
-
-
-#        vertex_shader = shaders.compileShader(src.VERTEX_SHADER,
-#                                              gl.GL_VERTEX_SHADER)
-#
-#        fragment_shader = shaders.compileShader(src.FRAGMENT_SHADER,
-#                                                gl.GL_FRAGMENT_SHADER)
-#        self.shader = shaders.compileProgram(vertex_shader, fragment_shader)
         # Prepare vertex buffer objects
         for m in self.models:
             m.create_vbo()
@@ -147,8 +138,7 @@ class Game(object):
         for m in self.models:
             # 1. Use shaders for this vbo
             self.programs['std_program'].use()
-#            shaders.glUseProgram(self.shader)
-#            # (location, count, transpose, value)
+            # (location, count, transpose, value)
             gl.glUniformMatrix4fv(self.uniforms['View'], 1, True, self.View)
             gl.glUniformMatrix4fv(self.uniforms['Model'], 1, True, self.Model)
             gl.glUniformMatrix4fv(self.uniforms['Projection'], 1, True,
