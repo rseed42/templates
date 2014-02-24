@@ -32,9 +32,9 @@ class Game(object):
         # Transformation matrices, etc. that are passed to shaders
         self.uniforms = {}
         #
-        self.mat_view = np.identity(4, 'f')
-        self.mat_model = np.identity(4, 'f')
-        self.mat_projection = np.identity(4, 'f')
+        self.View = np.identity(4, 'f')
+        self.Model = np.identity(4, 'f')
+        self.Projection = np.identity(4, 'f')
         #
         # Models (later to be scene graph)
         self.models = []
@@ -60,7 +60,7 @@ class Game(object):
     def init_gl(self):
         # Clear buffers
         gl.glClearColor(0,0,0,0)
-        gl.glClearDepth(1.0)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         # Viewport
         gl.glViewport(0,0,WND_SIZE[0], WND_SIZE[1])
         # Shaders
@@ -123,10 +123,10 @@ class Game(object):
         # Draw stuff here
         shaders.glUseProgram(self.shader)
         # (location, count, transpose, value)
-        gl.glUniformMatrix4fv(self.uniforms['View'], 1, True, self.mat_view)
-        gl.glUniformMatrix4fv(self.uniforms['Model'], 1, True, self.mat_model)
+        gl.glUniformMatrix4fv(self.uniforms['View'], 1, True, self.View)
+        gl.glUniformMatrix4fv(self.uniforms['Model'], 1, True, self.Model)
         gl.glUniformMatrix4fv(self.uniforms['Projection'], 1, True,
-                              self.mat_projection)
+                              self.Projection)
         for m in self.models:
             try:
                 m.vbo.bind()
