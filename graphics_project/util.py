@@ -32,14 +32,14 @@ def orthographic(left, right, bottom, top, near, far):
 #    mat[3,3] = 0
 #    return mat
 #
-#def frustrum(left, right, bottom, top, near, far):
-#    """
-#    """
-#    mat = np.identity(4, 'f')
-#    mat[0,0] = 2*near/float(right-left)
-#    mat[1,1] = 2*near/float(top - bottom)
-#    mat[2,2] = float(near+far)/(near-far)
-#    mat[2,3] = (2*near*far)/float(near-far)
-#    mat[3,2] = -1.0
-#    mat[3,3] = 0.0
-#    return mat
+def frustrum(left, right, bottom, top, near, far):
+    """
+    """
+    mat = np.identity(4, 'f')
+    mat[0,0] = 2*near/float(right-left)
+    mat[1,1] = 2*near/float(top - bottom)
+    mat[2,2] = float(near+far)/(near-far)
+    mat[2,3] = (2*near*far)/float(near-far)
+    mat[3,2] = -1.0
+    mat[3,3] = 0.0
+    return mat

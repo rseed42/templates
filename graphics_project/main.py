@@ -17,11 +17,13 @@ import model
 import camera
 import util
 import shader
+import transform
 #-------------------------------------------------------------------------------
 WND_SIZE = (800, 600)
 WND_FLAGS = sdl.SDL_WINDOW_OPENGL | sdl.SDL_WINDOW_SHOWN | \
             sdl.SDL_WINDOW_RESIZABLE
 MODEL_DIR = 'data'
+FOV_BOX_SIDE = 100
 #-------------------------------------------------------------------------------
 # A very simple opengl app
 #-------------------------------------------------------------------------------
@@ -30,16 +32,20 @@ class Game(object):
         self.window = None
         self.glcontext = None
         self.running = True
-        self.spacebox = (-3, 3, -3, 3, -3, 3)
-
+        half_side = 0.5*FOV_BOX_SIDE
+        self.viewbox = (-half_side, half_side, -half_side, half_side,
+                        10, 110)
         # Transformation matrices, etc. that are passed to shaders
         self.uniforms = {}
         #
         self.cam = camera.Camera(eye=np.array([0,0,10]))
         # Vertex Transformation Matrices (Default)
-        self.Model = np.identity(4, 'f')
+        trans = transform.Transform()
+        trans.rotate_y(np.deg2rad(10))
+        self.Model = trans.matrix
         self.View = self.cam.view_matrix()
-        self.Projection = util.orthographic(*self.spacebox)
+#        self.Projection = util.orthographic(*self.viewbox)
+        self.Projection = util.frustrum(*self.viewbox)
         # Light
         self.Ambient = np.array([0.4,0.4,0.4,1], 'f')
         # Models (later to be scene graph)
