@@ -39,7 +39,6 @@ class Game(object):
         # Vertex Transformation Matrices (Default)
         self.Model = np.identity(4, 'f')
         self.View = self.cam.view_matrix()
-#        self.View = np.identity(4, 'f')
         self.Projection = util.orthographic(*self.spacebox)
         # Models (later to be scene graph)
         self.models = []
@@ -50,6 +49,8 @@ class Game(object):
                 model = self.load_model(os.path.join(pardir, subdir))
                 if not model: continue
                 self.models.append(model)
+        #
+        self.attrib = {}
 
     def load_model(self, model_dir):
         """ Load model from object file
@@ -60,6 +61,7 @@ class Game(object):
             wfmodel = wfparser.read(os.path.join(model_dir, fn))
             m = model.Model(fn.split('.')[0])
             m.load_vertices(wfmodel.vertices)
+#            print m.vertex_array
             return m
         return None
 
@@ -72,19 +74,27 @@ class Game(object):
         # Shaders
         vertex_shader = shaders.compileShader(src.VERTEX_SHADER,
                                               gl.GL_VERTEX_SHADER)
-#       fragment_shader = shaders.compileShader(src.FRAGMENT_SHADER,
-#                                                gl.GL_FRAGMENT_SHADER)
-#       self.shader = shaders.compileProgram(vertex_shader, fragment_shader)
-        self.shader = shaders.compileProgram(vertex_shader)
+        fragment_shader = shaders.compileShader(src.FRAGMENT_SHADER,
+                                                gl.GL_FRAGMENT_SHADER)
+        self.shader = shaders.compileProgram(vertex_shader, fragment_shader)
         # Prepare vertex buffer objects
         for m in self.models:
             m.create_vbo()
+#            print gl.glGetAttribLocation(self.shader, 'position')
+#            self.attrib[m] = {
+#                           'vPos' : gl.glGetAttribLocation(self.shader, 'vPos'),
+#                           'vCol' : gl.glGetAttribLocation(self.shader, 'vCol'),
+#            }
+#            print self.attrib[m]
 
         # Shader parameters
         self.uniforms['View'] =  gl.glGetUniformLocation(self.shader, 'View')
         self.uniforms['Model'] =  gl.glGetUniformLocation(self.shader, 'Model')
         self.uniforms['Projection'] = gl.glGetUniformLocation(self.shader,
                                                               'Projection')
+
+        print gl.glGetString(gl.GL_VERSION)
+        print gl.glGetString(gl.GL_SHADING_LANGUAGE_VERSION)
     #---------------------------------------
     # Init the whole system
     #---------------------------------------
@@ -127,28 +137,43 @@ class Game(object):
         """ Show scene: mostly automatic
         """
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-        # Draw stuff here
-        shaders.glUseProgram(self.shader)
-        # (location, count, transpose, value)
-        gl.glUniformMatrix4fv(self.uniforms['View'], 1, True, self.View)
-        gl.glUniformMatrix4fv(self.uniforms['Model'], 1, True, self.Model)
-        gl.glUniformMatrix4fv(self.uniforms['Projection'], 1, True,
-                              self.Projection)
         for m in self.models:
-            try:
-                m.vbo.bind()
-                try:
-                    gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-                    gl.glEnableClientState(gl.GL_COLOR_ARRAY)
-                    gl.glVertexPointer(4, gl.GL_FLOAT, 32, m.vbo)
-                    gl.glColorPointer(4, gl.GL_FLOAT, 32, m.vbo+16)
-                    gl.glDrawArrays(m.primitive, m.vertex_start, m.vertex_end)
-                finally:
-                    m.vbo.unbind()
-                    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-                    gl.glDisableClientState(gl.GL_COLOR_ARRAY)
-            finally:
-                shaders.glUseProgram(0)
+            # 1. Use shaders for this vbo
+            shaders.glUseProgram(self.shader)
+            # (location, count, transpose, value)
+            gl.glUniformMatrix4fv(self.uniforms['View'], 1, True, self.View)
+            gl.glUniformMatrix4fv(self.uniforms['Model'], 1, True, self.Model)
+            gl.glUniformMatrix4fv(self.uniforms['Projection'], 1, True,
+                                  self.Projection)
+            # Bind vbo
+            m.vbo.bind()
+            gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+            gl.glEnableClientState(gl.GL_COLOR_ARRAY)
+            gl.glVertexPointer(4, gl.GL_FLOAT, 32, m.vbo)
+            gl.glColorPointer(4, gl.GL_FLOAT, 32, m.vbo+16)
+            # Draw primitive
+            gl.glDrawArrays(gl.GL_TRIANGLES, m.vertex_start, m.vertex_end)
+            m.vbo.unbind()
+            gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+            gl.glDisableClientState(gl.GL_COLOR_ARRAY)
+            # Deactivate shader
+            gl.glUseProgram(0)
+    #            try:
+    #                m.vbo.bind()
+    #                try:
+    #                    # Vertex Position
+    #                    gl.glEnableVertexAttribArray(0)
+    #                    gl.glVertexAttribPointer(0, 4, gl.GL_FLOAT, gl.GL_FALSE,
+    #                                             32, m.vbo)
+    #                    gl.glDrawArrays(m.primitive, m.vertex_start, m.vertex_end)
+    #                finally:
+    #                    gl.glDisableVertexAttribArray(0)
+    ##                    gl.glDisableVertexAttribArray(1)
+    #                    m.vbo.unbind()
+    ##                    gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+    ##                    gl.glDisableClientState(gl.GL_COLOR_ARRAY)
+    #            finally:
+    #                shaders.glUseProgram(0)
 
         # Double buffering
         sdl.SDL_GL_SwapWindow(self.window)
