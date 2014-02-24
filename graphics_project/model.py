@@ -29,10 +29,8 @@ class Model(object):
         self.vertex_array = np.ones((self.vertices.shape[0], 8), 'f')
         self.vertex_array[:,:4] = self.vertices
         # Small modifications for the cube
-        self.vertex_array[0, 4:-1] = (1,0,0)
-        self.vertex_array[1, 4:-1] = (0,1,0)
-        self.vertex_array[2, 4:-1] = (0,0,1)
-#        print self.vertex_array
+        self.vertex_array[:3, 4:-1] = (0,0,1)
+        self.vertex_array[3:6, 4:-1] = (1,0,0)
 
     def create_vbo(self):
         self.vbo = vbo.VBO(self.vertex_array, usage=gl.GL_STATIC_DRAW)
