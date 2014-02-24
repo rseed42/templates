@@ -11,6 +11,7 @@ class Model(object):
         self.vertices = []
         self.vertex_start = 0
         self.vertex_end = 0
+        self.colors = []
         self.vbo = None
 
     def load_vertices(self, vertices):
@@ -24,6 +25,10 @@ class Model(object):
         self.vertices[:,:3] = vertices
         # By default show all vertices
         self.vertex_end = len(vertices)
+        # Temporarily add color to the buffer
+        self.vertex_array = np.ones((self.vertices.shape[0], 8), 'f')
+        self.vertex_array[:,:4] = self.vertices
 
     def create_vbo(self):
-        self.vbo = vbo.VBO(self.vertices)
+#        self.vbo = vbo.VBO(self.vertices)
+        self.vbo = vbo.VBO(self.vertex_array)

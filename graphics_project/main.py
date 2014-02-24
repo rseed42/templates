@@ -71,9 +71,10 @@ class Game(object):
         # Shaders
         vertex_shader = shaders.compileShader(src.VERTEX_SHADER,
                                               gl.GL_VERTEX_SHADER)
-        fragment_shader = shaders.compileShader(src.FRAGMENT_SHADER,
-                                                gl.GL_FRAGMENT_SHADER)
-        self.shader = shaders.compileProgram(vertex_shader, fragment_shader)
+#       fragment_shader = shaders.compileShader(src.FRAGMENT_SHADER,
+#                                                gl.GL_FRAGMENT_SHADER)
+#       self.shader = shaders.compileProgram(vertex_shader, fragment_shader)
+        self.shader = shaders.compileProgram(vertex_shader)
         # Prepare vertex buffer objects
         for m in self.models:
             m.create_vbo()
@@ -137,11 +138,14 @@ class Game(object):
                 m.vbo.bind()
                 try:
                     gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-                    gl.glVertexPointerf(m.vbo)
+                    gl.glEnableClientState(gl.GL_COLOR_ARRAY)
+                    gl.glVertexPointer(4, gl.GL_FLOAT, 32, m.vbo)
+                    gl.glColorPointer(4, gl.GL_FLOAT, 32, m.vbo+16)
                     gl.glDrawArrays(m.primitive, m.vertex_start, m.vertex_end)
                 finally:
                     m.vbo.unbind()
                     gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+                    gl.glDisableClientState(gl.GL_COLOR_ARRAY)
             finally:
                 shaders.glUseProgram(0)
 
