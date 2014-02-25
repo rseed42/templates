@@ -57,20 +57,20 @@ class Game(object):
         self.viewbox = (-half_side, half_side,
                         -half_side*ASPECT_HW, half_side*ASPECT_HW,
                         NEAR_PLANE, FAR_PLANE)
-        self.uniform_values = {}
         # Transformation matrices, etc. that are passed to shaders
         self.cam = camera.Camera(position=np.array([0,0,1.5],'f'),
                                  target=np.array([0,0,0],'f'),
                                  orientation=np.array([0,1,0],'f')
         )
         # Vertex Transformation Matrices (Default)
-        self.uniform_values = self.define_uniform_values()
+#        self.uniform_values = self.define_uniform_values()
+        self.uniform_values_model = self.define_model_uniform_values()
 
         # Models (later to be scene graph)
         self.cube = self.load_model('data/cube')
         self.skybox = self.load_model('data/skybox')
 
-    def define_uniform_values(self):
+    def define_model_uniform_values(self):
         uniform = {}
         trans = transform.Transform()
         trans.scale(0.5)
@@ -151,9 +151,9 @@ class Game(object):
         # Prepare vertex buffer objects
         self.cube.create_vbo()
         # Shader parameters
-        self.uniform_ids = self.get_uniform_ids(self.program_light.program_id,
-                                                UNIFORM_MODEL)
-
+        self.uniform_ids_model = self.get_uniform_ids(
+                                                  self.program_light.program_id,
+                                                  UNIFORM_MODEL)
     #---------------------------------------
     # Init the whole system
     #---------------------------------------
@@ -201,8 +201,8 @@ class Game(object):
         # (location, count, transpose, value)
         for name in UNIFORM_MODEL:
             type_ = UNIFORM_TYPES[name]
-            id_ = self.uniform_ids[name]
-            val = self.uniform_values[name]
+            id_ = self.uniform_ids_model[name]
+            val = self.uniform_values_model[name]
             UNIFORM_FUNCTIONS[type_](id_, val)
 
         # Bind vbo
