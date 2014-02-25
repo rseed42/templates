@@ -45,11 +45,19 @@ class Game(object):
         self.cam = camera.Camera(eye=np.array([0,0,10]))
         # Vertex Transformation Matrices (Default)
         trans = transform.Transform()
-#        trans.rotate_z(np.deg2rad(45))
+        trans.rotate_x(np.deg2rad(45))
+        trans.rotate_y(np.deg2rad(45))
+#        trans.translate_x(20)
+#        trans.translate_y(20)
+#        trans.translate_z(-10)
+#        print trans.matrix
         self.Model = trans.matrix
-        self.View = self.cam.view_matrix()
+#        self.Model = np.identity(4,'f')
+#        self.View = self.cam.view_matrix()
+        self.View = np.identity(4, 'f')
 #        self.Projection = util.orthographic(*self.viewbox)
-        self.Projection = util.frustrum(*self.viewbox)
+#        self.Projection = util.frustum(*self.viewbox)
+        self.Projection = np.identity(4, 'f')
         # Light
         self.Normal = np.identity(3, 'f')
         self.Ambient = np.array([0.4,0.4,0.4,1], 'f')

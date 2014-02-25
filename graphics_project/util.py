@@ -18,7 +18,7 @@ def orthographic(left, right, bottom, top, near, far):
     return mat
 
 # To be fixed:
-#def frustrum2(phi, zn, zf):
+#def frustum2(phi, zn, zf):
 #    """
 #    """
 #    phi = np.deg2rad(phi)
@@ -32,7 +32,7 @@ def orthographic(left, right, bottom, top, near, far):
 #    mat[3,3] = 0
 #    return mat
 #
-def frustrum(left, right, bottom, top, near, far):
+def frustum(left, right, bottom, top, near, far):
     """
     """
     mat = np.identity(4, 'f')
