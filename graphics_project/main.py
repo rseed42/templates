@@ -60,12 +60,13 @@ class Game(object):
                         -half_side*ASPECT_HW, half_side*ASPECT_HW,
                         NEAR_PLANE, FAR_PLANE)
         # Transformation matrices, etc. that are passed to shaders
-        self.cam = camera.Camera(position=np.array([0,0,1.5],'f'),
+        self.cam = camera.Camera(position=np.array([0,0.5,1.5],'f'),
                                  target=np.array([0,0,0],'f'),
                                  orientation=np.array([0,1,0],'f')
         )
         # Vertex Transformation Matrices (Default)
         self.uniform_values_model = self.define_model_uniform_values()
+        self.uniform_values_plane = self.uniform_values_model.copy()
         self.uniform_values_skybox = dict([(k, self.uniform_values_model[k]) \
                                             for k in UNIFORM_SKYBOX])
         trans = transform.Transform()
@@ -74,11 +75,17 @@ class Game(object):
         trans.rotate_y(np.deg2rad(45))
         self.uniform_values_model['ModelMatrix'] = trans.matrix
         trans.reset()
+        trans.translate_y(0.5)
+        trans.scale(FOV_BOX_SIDE)
+        trans.rotate_x(np.deg2rad(180))
+        self.uniform_values_plane['ModelMatrix'] = trans.matrix
+        trans.reset()
         trans.scale(FOV_BOX_SIDE)
         self.uniform_values_skybox['ModelMatrix'] = trans.matrix
 
         # Models (later to be scene graph)
         self.cube = self.load_model('data/cube')
+        self.plane = self.load_model('data/plane')
         self.skybox = self.load_model('data/skybox')
         self.skybox.primitive = gl.GL_LINES
 
@@ -157,6 +164,7 @@ class Game(object):
         # Prepare vertex buffer objects
         self.skybox.create_vbo()
         self.cube.create_vbo()
+        self.plane.create_vbo()
         # Shader parameters
         self.uniform_ids_model = self.get_uniform_ids(
                                                   self.program_model.program_id,
@@ -236,6 +244,9 @@ class Game(object):
         self.show_object(self.program_skybox, UNIFORM_SKYBOX,
                          self.uniform_ids_skybox, self.uniform_values_skybox,
                          self.skybox)
+        self.show_object(self.program_model, UNIFORM_MODEL,
+                         self.uniform_ids_model, self.uniform_values_plane,
+                         self.plane)
         self.show_object(self.program_model, UNIFORM_MODEL,
                          self.uniform_ids_model, self.uniform_values_model,
                          self.cube)
