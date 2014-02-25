@@ -75,14 +75,8 @@ class Game(object):
         self.QuadraticAttenuation = 0.2
 
         # Models (later to be scene graph)
-        self.models = []
-        for pardir, subdirs, files in os.walk(MODEL_DIR):
-            if pardir != MODEL_DIR: continue
-            for subdir in subdirs:
-                if subdir.startswith('-'): continue
-                model = self.load_model(os.path.join(pardir, subdir))
-                if not model: continue
-                self.models.append(model)
+        self.cube = self.load_model('data/cube')
+        self.skybox = self.load_model('data/skybox')
 
     def load_model(self, model_dir):
         """ Load model from object file
@@ -113,20 +107,20 @@ class Game(object):
                                              gl.GL_FRAGMENT_SHADER)
         fragment_point_light.compile()
         # Attach to a program
-        program = shader.Program(vertex_point_light, fragment_point_light)
+        self.program_light = shader.Program(vertex_point_light,
+                                            fragment_point_light)
         # Before linking we need to bind attribute locations
-        program.bind_attrib_location(0, 'VertexPosition')
-        program.bind_attrib_location(1, 'VertexNormal')
-        program.bind_attrib_location(2, 'VertexColor')
+        self.program_light.bind_attrib_location(0, 'VertexPosition')
+        self.program_light.bind_attrib_location(1, 'VertexNormal')
+        self.program_light.bind_attrib_location(2, 'VertexColor')
+
         # We are ready
-        program.link()
-        self.program = program
+        self.program_light.link()
         #-----------------------------------------------
         # Prepare vertex buffer objects
-        for m in self.models:
-            m.create_vbo()
+        self.cube.create_vbo()
         # Shader parameters
-        pid = self.program.program_id
+        pid = self.program_light.program_id
         self.uniforms['ViewMatrix'] =  gl.glGetUniformLocation(pid,
                                                                'ViewMatrix')
         self.uniforms['ModelMatrix'] =  gl.glGetUniformLocation(pid,
@@ -187,53 +181,58 @@ class Game(object):
     #---------------------------------------
     # Render
     #---------------------------------------
+    def show_skybox(self):
+        pass
+
+    def show_model(self, m):
+        # 1. Use shaders for this vbo
+        self.program_light.use()
+        # (location, count, transpose, value)
+        gl.glUniformMatrix4fv(self.uniforms['ViewMatrix'], 1, True,
+                              self.ViewMatrix)
+        gl.glUniformMatrix4fv(self.uniforms['ModelMatrix'], 1, True,
+                              self.ModelMatrix)
+        gl.glUniformMatrix4fv(self.uniforms['ProjectionMatrix'], 1, True,
+                              self.ProjectionMatrix)
+        gl.glUniformMatrix3fv(self.uniforms['NormalMatrix'], 1, True,
+                              self.NormalMatrix)
+        gl.glUniform3f(self.uniforms['Ambient'], *self.Ambient)
+        gl.glUniform3f(self.uniforms['LightColor'], *self.LightColor)
+        gl.glUniform3f(self.uniforms['LightPosition'],
+                                     *self.LightPosition)
+        gl.glUniform1f(self.uniforms['Shininess'], self.Shininess)
+        gl.glUniform1f(self.uniforms['Strength'], self.Strength)
+        gl.glUniform3f(self.uniforms['EyeDirection'], *self.EyeDirection)
+
+        gl.glUniform1f(self.uniforms['ConstantAttenuation'],
+                       self.ConstantAttenuation)
+        gl.glUniform1f(self.uniforms['LinearAttenuation'],
+                       self.LinearAttenuation)
+        gl.glUniform1f(self.uniforms['QuadraticAttenuation'],
+                       self.QuadraticAttenuation)
+        # Bind vbo
+        m.vbo.bind()
+        gl.glEnableVertexAttribArray(0)
+        gl.glEnableVertexAttribArray(1)
+        gl.glEnableVertexAttribArray(2)
+        gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo)
+        gl.glVertexAttribPointer(1,3,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo+16)
+        gl.glVertexAttribPointer(2,4,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo+28)
+        # Draw primitive
+        gl.glDrawArrays(gl.GL_TRIANGLES, m.start_id, m.end_id)
+        m.vbo.unbind()
+        gl.glDisableVertexAttribArray(0)
+        gl.glDisableVertexAttribArray(1)
+        gl.glDisableVertexAttribArray(2)
+        # Deactivate shader program
+        gl.glUseProgram(0)
+
     def render(self):
         """ Show scene: mostly automatic
         """
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-        for m in self.models:
-            # 1. Use shaders for this vbo
-            self.program.use()
-            # (location, count, transpose, value)
-            gl.glUniformMatrix4fv(self.uniforms['ViewMatrix'], 1, True,
-                                  self.ViewMatrix)
-            gl.glUniformMatrix4fv(self.uniforms['ModelMatrix'], 1, True,
-                                  self.ModelMatrix)
-            gl.glUniformMatrix4fv(self.uniforms['ProjectionMatrix'], 1, True,
-                                  self.ProjectionMatrix)
-            gl.glUniformMatrix3fv(self.uniforms['NormalMatrix'], 1, True,
-                                  self.NormalMatrix)
-            gl.glUniform3f(self.uniforms['Ambient'], *self.Ambient)
-            gl.glUniform3f(self.uniforms['LightColor'], *self.LightColor)
-            gl.glUniform3f(self.uniforms['LightPosition'],
-                                         *self.LightPosition)
-            gl.glUniform1f(self.uniforms['Shininess'], self.Shininess)
-            gl.glUniform1f(self.uniforms['Strength'], self.Strength)
-            gl.glUniform3f(self.uniforms['EyeDirection'], *self.EyeDirection)
-
-            gl.glUniform1f(self.uniforms['ConstantAttenuation'],
-                           self.ConstantAttenuation)
-            gl.glUniform1f(self.uniforms['LinearAttenuation'],
-                           self.LinearAttenuation)
-            gl.glUniform1f(self.uniforms['QuadraticAttenuation'],
-                           self.QuadraticAttenuation)
-            # Bind vbo
-            m.vbo.bind()
-            gl.glEnableVertexAttribArray(0)
-            gl.glEnableVertexAttribArray(1)
-            gl.glEnableVertexAttribArray(2)
-            gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo)
-            gl.glVertexAttribPointer(1,3,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo+16)
-            gl.glVertexAttribPointer(2,4,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo+28)
-            # Draw primitive
-            gl.glDrawArrays(gl.GL_TRIANGLES, m.start_id, m.end_id)
-            m.vbo.unbind()
-            gl.glDisableVertexAttribArray(0)
-            gl.glDisableVertexAttribArray(1)
-            gl.glDisableVertexAttribArray(2)
-            # Deactivate shader program
-            gl.glUseProgram(0)
-
+        self.show_skybox()
+        self.show_model(self.cube)
         # Double buffering
         sdl.SDL_GL_SwapWindow(self.window)
 
