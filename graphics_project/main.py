@@ -33,6 +33,7 @@ UNIFORM_MODEL = ['ViewMatrix', 'ModelMatrix', 'ProjectionMatrix',
                  'NormalMatrix', 'Ambient', 'LightColor', 'LightPosition',
                  'Shininess', 'Strength', 'EyeDirection', 'ConstantAttenuation',
                  'LinearAttenuation', 'QuadraticAttenuation']
+UNIFORM_SKYBOX = ['ViewMatrix', 'ModelMatrix', 'ProjectionMatrix']
 UNIFORM_TYPES = dict(ViewMatrix='mat4', ModelMatrix='mat4',
                      ProjectionMatrix='mat4', NormalMatrix='mat3',
                      Ambient='vec3', LightColor='vec3', LightPosition='vec3',
@@ -63,9 +64,9 @@ class Game(object):
                                  orientation=np.array([0,1,0],'f')
         )
         # Vertex Transformation Matrices (Default)
-#        self.uniform_values = self.define_uniform_values()
         self.uniform_values_model = self.define_model_uniform_values()
-
+        self.uniform_values_skybox = dict([(k, self.uniform_values_model[k]) \
+                                            for k in UNIFORM_SKYBOX])
         # Models (later to be scene graph)
         self.cube = self.load_model('data/cube')
         self.skybox = self.load_model('data/skybox')
@@ -144,16 +145,21 @@ class Game(object):
         gl.glEnable(gl.GL_CULL_FACE)
         gl.glFrontFace(gl.GL_CCW)
         # ------------- Shaders -------------
-        self.program_light = self.shader_program(src.VERTEX_POINT_LIGHT,
+        self.program_model = self.shader_program(src.VERTEX_POINT_LIGHT,
                                                  src.FRAGMENT_POINT_LIGHT,
         )
+#        self.program_skybox = self.shader_program(src.VERTEX_SIMPLE,
+#                                                  src.FRAGMENT_SIMPLE)
         #-----------------------------------------------
         # Prepare vertex buffer objects
         self.cube.create_vbo()
         # Shader parameters
         self.uniform_ids_model = self.get_uniform_ids(
-                                                  self.program_light.program_id,
+                                                  self.program_model.program_id,
                                                   UNIFORM_MODEL)
+#        self.uniform_ids_skybox = self.get_uniform_ids(
+#                                                  self.progam_skybox.program_id,
+#                                                  UNIFORM_SKYBOX)
     #---------------------------------------
     # Init the whole system
     #---------------------------------------
@@ -192,33 +198,30 @@ class Game(object):
     #---------------------------------------
     # Render
     #---------------------------------------
-    def show_skybox(self):
-        pass
-
-    def show_model(self, m):
+    def show_object(self, program, uniform_names, uniform_ids, uniform_values,
+                          model):
         # 1. Use shaders for this vbo
-        self.program_light.use()
+        program.use()
         # (location, count, transpose, value)
-        for name in UNIFORM_MODEL:
+        for name in uniform_names:
             type_ = UNIFORM_TYPES[name]
-            id_ = self.uniform_ids_model[name]
-            val = self.uniform_values_model[name]
+            id_ = uniform_ids[name]
+            val = uniform_values[name]
             UNIFORM_FUNCTIONS[type_](id_, val)
 
         # Bind vbo
-        m.vbo.bind()
-        gl.glEnableVertexAttribArray(0)
-        gl.glEnableVertexAttribArray(1)
-        gl.glEnableVertexAttribArray(2)
-        gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo)
-        gl.glVertexAttribPointer(1,3,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo+16)
-        gl.glVertexAttribPointer(2,4,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo+28)
+        model.vbo.bind()
+        for i in xrange(3):
+            gl.glEnableVertexAttribArray(i)
+
+        gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,44,model.vbo)
+        gl.glVertexAttribPointer(1,3,gl.GL_FLOAT,gl.GL_FALSE,44,model.vbo+16)
+        gl.glVertexAttribPointer(2,4,gl.GL_FLOAT,gl.GL_FALSE,44,model.vbo+28)
         # Draw primitive
-        gl.glDrawArrays(gl.GL_TRIANGLES, m.start_id, m.end_id)
-        m.vbo.unbind()
-        gl.glDisableVertexAttribArray(0)
-        gl.glDisableVertexAttribArray(1)
-        gl.glDisableVertexAttribArray(2)
+        gl.glDrawArrays(model.primitive, model.start_id, model.end_id)
+        model.vbo.unbind()
+        for i in xrange(3):
+            gl.glDisableVertexAttribArray(i)
         # Deactivate shader program
         gl.glUseProgram(0)
 
@@ -226,8 +229,9 @@ class Game(object):
         """ Show scene: mostly automatic
         """
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-        self.show_skybox()
-        self.show_model(self.cube)
+        self.show_object(self.program_model, UNIFORM_MODEL,
+                         self.uniform_ids_model, self.uniform_values_model,
+                         self.cube)
         # Double buffering
         sdl.SDL_GL_SwapWindow(self.window)
 
