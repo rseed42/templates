@@ -24,9 +24,10 @@ ASPECT_HW = float(WND_SIZE[1])/WND_SIZE[0]
 WND_FLAGS = sdl.SDL_WINDOW_OPENGL | sdl.SDL_WINDOW_SHOWN | \
             sdl.SDL_WINDOW_RESIZABLE
 MODEL_DIR = 'data'
-FOV_BOX_SIDE = 2
-NEAR_PLANE = 1
-FAR_PLANE = 3
+# Viewing box size in world coordinates
+FOV_BOX_SIDE = 2.
+NEAR_PLANE = 1.
+FAR_PLANE = NEAR_PLANE + FOV_BOX_SIDE
 MODEL_EXT = '.dat'
 
 UNIFORM_MODEL = ['ViewMatrix', 'ModelMatrix', 'ProjectionMatrix',
@@ -67,21 +68,23 @@ class Game(object):
         self.uniform_values_model = self.define_model_uniform_values()
         self.uniform_values_skybox = dict([(k, self.uniform_values_model[k]) \
                                             for k in UNIFORM_SKYBOX])
-        # Models (later to be scene graph)
-        self.cube = self.load_model('data/cube')
-        self.skybox = self.load_model('data/skybox')
-
-    def define_model_uniform_values(self):
-        uniform = {}
         trans = transform.Transform()
         trans.scale(0.5)
         trans.rotate_x(np.deg2rad(45))
         trans.rotate_y(np.deg2rad(45))
-        #trans.translate_z(+0.2)
-#        trans.translate_x(0.4)
-#        trans.translate_y(20)
-#        trans.translate_z(-10)
-        uniform['ModelMatrix'] = trans.matrix
+        self.uniform_values_model['ModelMatrix'] = trans.matrix
+        trans.reset()
+        trans.scale(FOV_BOX_SIDE)
+        self.uniform_values_skybox['ModelMatrix'] = trans.matrix
+
+        # Models (later to be scene graph)
+        self.cube = self.load_model('data/cube')
+        self.skybox = self.load_model('data/skybox')
+        self.skybox.primitive = gl.GL_LINES
+
+    def define_model_uniform_values(self):
+        uniform = {}
+        uniform['ModelMatrix'] = np.identity(4, 'f')
         uniform['ViewMatrix'] = self.cam.view_matrix()
         uniform['ProjectionMatrix'] = util.frustum(*self.viewbox)
 
@@ -148,18 +151,19 @@ class Game(object):
         self.program_model = self.shader_program(src.VERTEX_POINT_LIGHT,
                                                  src.FRAGMENT_POINT_LIGHT,
         )
-#        self.program_skybox = self.shader_program(src.VERTEX_SIMPLE,
-#                                                  src.FRAGMENT_SIMPLE)
+        self.program_skybox = self.shader_program(src.VERTEX_SIMPLE,
+                                                  src.FRAGMENT_SIMPLE)
         #-----------------------------------------------
         # Prepare vertex buffer objects
+        self.skybox.create_vbo()
         self.cube.create_vbo()
         # Shader parameters
         self.uniform_ids_model = self.get_uniform_ids(
                                                   self.program_model.program_id,
                                                   UNIFORM_MODEL)
-#        self.uniform_ids_skybox = self.get_uniform_ids(
-#                                                  self.progam_skybox.program_id,
-#                                                  UNIFORM_SKYBOX)
+        self.uniform_ids_skybox = self.get_uniform_ids(
+                                                 self.program_skybox.program_id,
+                                                 UNIFORM_SKYBOX)
     #---------------------------------------
     # Init the whole system
     #---------------------------------------
@@ -229,6 +233,9 @@ class Game(object):
         """ Show scene: mostly automatic
         """
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        self.show_object(self.program_skybox, UNIFORM_SKYBOX,
+                         self.uniform_ids_skybox, self.uniform_values_skybox,
+                         self.skybox)
         self.show_object(self.program_model, UNIFORM_MODEL,
                          self.uniform_ids_model, self.uniform_values_model,
                          self.cube)
