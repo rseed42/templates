@@ -24,7 +24,9 @@ ASPECT_HW = float(WND_SIZE[1])/WND_SIZE[0]
 WND_FLAGS = sdl.SDL_WINDOW_OPENGL | sdl.SDL_WINDOW_SHOWN | \
             sdl.SDL_WINDOW_RESIZABLE
 MODEL_DIR = 'data'
-FOV_BOX_SIDE = 100
+FOV_BOX_SIDE = 2
+NEAR_PLANE = 1
+FAR_PLANE = 3
 MODEL_EXT = '.dat'
 #-------------------------------------------------------------------------------
 # A very simple opengl app
@@ -37,31 +39,30 @@ class Game(object):
         half_side = 0.5*FOV_BOX_SIDE
         self.viewbox = (-half_side, half_side,
                         -half_side*ASPECT_HW, half_side*ASPECT_HW,
-                        10, 110)
-
+                        NEAR_PLANE, FAR_PLANE)
         # Transformation matrices, etc. that are passed to shaders
         self.uniforms = {}
         #
-        self.cam = camera.Camera(eye=np.array([0,0,10]))
+        self.cam = camera.Camera(position=np.array([0,0,1.5],'f'),
+                                 target=np.array([0,0,0],'f'),
+                                 orientation=np.array([0,1,0],'f')
+        )
         # Vertex Transformation Matrices (Default)
         trans = transform.Transform()
+        trans.scale(0.5)
         trans.rotate_x(np.deg2rad(45))
         trans.rotate_y(np.deg2rad(45))
-#        trans.translate_x(20)
+        #trans.translate_z(+0.2)
+#        trans.translate_x(0.4)
 #        trans.translate_y(20)
 #        trans.translate_z(-10)
 #        print trans.matrix
         self.Model = trans.matrix
-#        self.Model = np.identity(4,'f')
-#        self.View = self.cam.view_matrix()
-        self.View = np.identity(4, 'f')
-#        self.Projection = util.orthographic(*self.viewbox)
-#        self.Projection = util.frustum(*self.viewbox)
-        self.Projection = np.identity(4, 'f')
-        # Light
+        self.View = self.cam.view_matrix()
+        self.Projection = util.frustum(*self.viewbox)
         self.Normal = np.identity(3, 'f')
         self.Ambient = np.array([0.4,0.4,0.4,1], 'f')
-#        self.LightColor = np.ones(3, 'f')
+        self.LightColor = np.ones(3, 'f')
         self.LightColor = np.array([0,0,1], 'f')
         self.LightDirection = np.array([0,0,1], 'f')
         self.HalfVector = np.array([0,0,-1], 'f')
