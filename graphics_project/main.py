@@ -20,6 +20,7 @@ import shader
 import transform
 #-------------------------------------------------------------------------------
 WND_SIZE = (800, 600)
+ASPECT_HW = float(WND_SIZE[1])/WND_SIZE[0]
 WND_FLAGS = sdl.SDL_WINDOW_OPENGL | sdl.SDL_WINDOW_SHOWN | \
             sdl.SDL_WINDOW_RESIZABLE
 MODEL_DIR = 'data'
@@ -34,15 +35,17 @@ class Game(object):
         self.glcontext = None
         self.running = True
         half_side = 0.5*FOV_BOX_SIDE
-        self.viewbox = (-half_side, half_side, -half_side, half_side,
+        self.viewbox = (-half_side, half_side,
+                        -half_side*ASPECT_HW, half_side*ASPECT_HW,
                         10, 110)
+
         # Transformation matrices, etc. that are passed to shaders
         self.uniforms = {}
         #
         self.cam = camera.Camera(eye=np.array([0,0,10]))
         # Vertex Transformation Matrices (Default)
         trans = transform.Transform()
-        trans.rotate_y(np.deg2rad(10))
+#        trans.rotate_z(np.deg2rad(45))
         self.Model = trans.matrix
         self.View = self.cam.view_matrix()
 #        self.Projection = util.orthographic(*self.viewbox)
