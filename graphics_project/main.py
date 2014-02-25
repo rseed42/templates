@@ -28,6 +28,23 @@ FOV_BOX_SIDE = 2
 NEAR_PLANE = 1
 FAR_PLANE = 3
 MODEL_EXT = '.dat'
+
+UNIFORM_MODEL = ['ViewMatrix', 'ModelMatrix', 'ProjectionMatrix',
+                 'NormalMatrix', 'Ambient', 'LightColor', 'LightPosition',
+                 'Shininess', 'Strength', 'EyeDirection', 'ConstantAttenuation',
+                 'LinearAttenuation', 'QuadraticAttenuation']
+UNIFORM_TYPES = dict(ViewMatrix='mat4', ModelMatrix='mat4',
+                     ProjectionMatrix='mat4', NormalMatrix='mat3',
+                     Ambient='vec3', LightColor='vec3', LightPosition='vec3',
+                     Shininess='float', Strength='float', EyeDirection='vec3',
+                     ConstantAttenuation='float', LinearAttenuation='float',
+                     QuadraticAttenuation='float'
+)
+UNIFORM_FUNCTIONS = {'mat4':lambda i,x: gl.glUniformMatrix4fv(i,1,True,x),
+                     'mat3':lambda i,x: gl.glUniformMatrix3fv(i,1,True,x),
+                     'vec3':lambda i,x: gl.glUniform3f(i,*x),
+                     'float':lambda i,x: gl.glUniform1f(i,x)
+}
 #-------------------------------------------------------------------------------
 # A very simple opengl app
 #-------------------------------------------------------------------------------
@@ -40,14 +57,21 @@ class Game(object):
         self.viewbox = (-half_side, half_side,
                         -half_side*ASPECT_HW, half_side*ASPECT_HW,
                         NEAR_PLANE, FAR_PLANE)
+        self.uniform_values = {}
         # Transformation matrices, etc. that are passed to shaders
-        self.uniforms = {}
-        #
         self.cam = camera.Camera(position=np.array([0,0,1.5],'f'),
                                  target=np.array([0,0,0],'f'),
                                  orientation=np.array([0,1,0],'f')
         )
         # Vertex Transformation Matrices (Default)
+        self.uniform_values = self.define_uniform_values()
+
+        # Models (later to be scene graph)
+        self.cube = self.load_model('data/cube')
+        self.skybox = self.load_model('data/skybox')
+
+    def define_uniform_values(self):
+        uniform = {}
         trans = transform.Transform()
         trans.scale(0.5)
         trans.rotate_x(np.deg2rad(45))
@@ -56,27 +80,24 @@ class Game(object):
 #        trans.translate_x(0.4)
 #        trans.translate_y(20)
 #        trans.translate_z(-10)
-        self.ModelMatrix = trans.matrix
-        self.ViewMatrix = self.cam.view_matrix()
-        self.ProjectionMatrix = util.frustum(*self.viewbox)
+        uniform['ModelMatrix'] = trans.matrix
+        uniform['ViewMatrix'] = self.cam.view_matrix()
+        uniform['ProjectionMatrix'] = util.frustum(*self.viewbox)
 
         # ----------- Light -------------
-        self.NormalMatrix = np.identity(3, 'f')
-        self.Ambient = np.array([0.2, 0.2, 0.2], 'f')
-        self.LightColor = np.array([1, 1, 1], 'f')
+        uniform['NormalMatrix'] = np.identity(3, 'f')
+        uniform['Ambient'] = np.array([0.2, 0.2, 0.2], 'f')
+        uniform['LightColor'] = np.array([1, 1, 1], 'f')
         # Light position is a vec3, but needs to be transformed to eye space
         light = np.array([1.0, 3.0, 2.0,1], 'f')
-        self.LightPosition = np.dot(self.ViewMatrix, light)[:-1]
-        self.Shininess = 0.2;
-        self.Strength = 1.0;
-        self.EyeDirection = np.array([0, 0, 1], 'f')
-        self.ConstantAttenuation = 0.3
-        self.LinearAttenuation = 0.2
-        self.QuadraticAttenuation = 0.2
-
-        # Models (later to be scene graph)
-        self.cube = self.load_model('data/cube')
-        self.skybox = self.load_model('data/skybox')
+        uniform['LightPosition'] = np.dot(uniform['ViewMatrix'], light)[:-1]
+        uniform['Shininess'] = 0.2;
+        uniform['Strength'] = 1.0;
+        uniform['EyeDirection'] = np.array([0, 0, 1], 'f')
+        uniform['ConstantAttenuation'] = 0.3
+        uniform['LinearAttenuation'] = 0.2
+        uniform['QuadraticAttenuation'] = 0.2
+        return uniform
 
     def load_model(self, model_dir):
         """ Load model from object file
@@ -105,6 +126,14 @@ class Game(object):
         program.link()
         return program
 
+    def get_uniform_ids(self, program_id, params):
+        """ Find out the location indices of uniform shader parameters
+        """
+        mapping = {}
+        for name in params:
+            mapping[name] = gl.glGetUniformLocation(program_id, name)
+        return mapping
+
     def init_gl(self):
         # Clear buffers
         gl.glClearColor(0,0,0,0)
@@ -122,29 +151,9 @@ class Game(object):
         # Prepare vertex buffer objects
         self.cube.create_vbo()
         # Shader parameters
-        pid = self.program_light.program_id
-        self.uniforms['ViewMatrix'] =  gl.glGetUniformLocation(pid,
-                                                               'ViewMatrix')
-        self.uniforms['ModelMatrix'] =  gl.glGetUniformLocation(pid,
-                                                                'ModelMatrix')
-        self.uniforms['ProjectionMatrix'] = gl.glGetUniformLocation(pid,
-                                                             'ProjectionMatrix')
-        self.uniforms['NormalMatrix'] = gl.glGetUniformLocation(pid,
-                                                                'NormalMatrix')
-        self.uniforms['Ambient'] = gl.glGetUniformLocation(pid, 'Ambient')
-        self.uniforms['LightColor'] = gl.glGetUniformLocation(pid, 'LightColor')
-        self.uniforms['LightPosition'] = gl.glGetUniformLocation(pid,
-                                                              'LightPosition')
-        self.uniforms['Shininess'] = gl.glGetUniformLocation(pid, 'Shininess')
-        self.uniforms['Strength'] = gl.glGetUniformLocation(pid, 'Strength')
-        self.uniforms['EyeDirection'] = gl.glGetUniformLocation(pid,
-                                                                'EyeDirection')
-        self.uniforms['ConstantAttenuation'] = gl.glGetUniformLocation(pid,
-                                                          'ConstantAttenuation')
-        self.uniforms['LinearAttenuation'] = gl.glGetUniformLocation(pid,
-                                                            'LinearAttenuation')
-        self.uniforms['QuadraticAttenuation'] = gl.glGetUniformLocation(pid,
-                                                         'QuadraticAttenuation')
+        self.uniform_ids = self.get_uniform_ids(self.program_light.program_id,
+                                                UNIFORM_MODEL)
+
     #---------------------------------------
     # Init the whole system
     #---------------------------------------
@@ -190,28 +199,12 @@ class Game(object):
         # 1. Use shaders for this vbo
         self.program_light.use()
         # (location, count, transpose, value)
-        gl.glUniformMatrix4fv(self.uniforms['ViewMatrix'], 1, True,
-                              self.ViewMatrix)
-        gl.glUniformMatrix4fv(self.uniforms['ModelMatrix'], 1, True,
-                              self.ModelMatrix)
-        gl.glUniformMatrix4fv(self.uniforms['ProjectionMatrix'], 1, True,
-                              self.ProjectionMatrix)
-        gl.glUniformMatrix3fv(self.uniforms['NormalMatrix'], 1, True,
-                              self.NormalMatrix)
-        gl.glUniform3f(self.uniforms['Ambient'], *self.Ambient)
-        gl.glUniform3f(self.uniforms['LightColor'], *self.LightColor)
-        gl.glUniform3f(self.uniforms['LightPosition'],
-                                     *self.LightPosition)
-        gl.glUniform1f(self.uniforms['Shininess'], self.Shininess)
-        gl.glUniform1f(self.uniforms['Strength'], self.Strength)
-        gl.glUniform3f(self.uniforms['EyeDirection'], *self.EyeDirection)
+        for name in UNIFORM_MODEL:
+            type_ = UNIFORM_TYPES[name]
+            id_ = self.uniform_ids[name]
+            val = self.uniform_values[name]
+            UNIFORM_FUNCTIONS[type_](id_, val)
 
-        gl.glUniform1f(self.uniforms['ConstantAttenuation'],
-                       self.ConstantAttenuation)
-        gl.glUniform1f(self.uniforms['LinearAttenuation'],
-                       self.LinearAttenuation)
-        gl.glUniform1f(self.uniforms['QuadraticAttenuation'],
-                       self.QuadraticAttenuation)
         # Bind vbo
         m.vbo.bind()
         gl.glEnableVertexAttribArray(0)
