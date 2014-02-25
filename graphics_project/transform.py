@@ -77,3 +77,6 @@ class Transform(object):
 
     def transform(self, vector):
         return np.dot(self.matrix, vector)
+
+    def reset(self, vector):
+        self.matrix = np.identity(4, 'f')
