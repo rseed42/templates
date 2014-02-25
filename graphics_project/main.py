@@ -90,6 +90,21 @@ class Game(object):
             return m
         return None
 
+    def shader_program(self, src_vertex, src_fragment):
+        vertex = shader.Shader(src_vertex, gl.GL_VERTEX_SHADER)
+        vertex.compile()
+        fragment = shader.Shader(src_fragment, gl.GL_FRAGMENT_SHADER)
+        fragment.compile()
+        # Attach to a program
+        program = shader.Program(vertex, fragment)
+        # Before linking we need to bind attribute locations
+        program.bind_attrib_location(0, 'VertexPosition')
+        program.bind_attrib_location(1, 'VertexNormal')
+        program.bind_attrib_location(2, 'VertexColor')
+        # We are ready
+        program.link()
+        return program
+
     def init_gl(self):
         # Clear buffers
         gl.glClearColor(0,0,0,0)
@@ -100,22 +115,9 @@ class Game(object):
         gl.glEnable(gl.GL_CULL_FACE)
         gl.glFrontFace(gl.GL_CCW)
         # ------------- Shaders -------------
-        vertex_point_light = shader.Shader(src.VERTEX_POINT_LIGHT,
-                                           gl.GL_VERTEX_SHADER)
-        vertex_point_light.compile()
-        fragment_point_light = shader.Shader(src.FRAGMENT_POINT_LIGHT,
-                                             gl.GL_FRAGMENT_SHADER)
-        fragment_point_light.compile()
-        # Attach to a program
-        self.program_light = shader.Program(vertex_point_light,
-                                            fragment_point_light)
-        # Before linking we need to bind attribute locations
-        self.program_light.bind_attrib_location(0, 'VertexPosition')
-        self.program_light.bind_attrib_location(1, 'VertexNormal')
-        self.program_light.bind_attrib_location(2, 'VertexColor')
-
-        # We are ready
-        self.program_light.link()
+        self.program_light = self.shader_program(src.VERTEX_POINT_LIGHT,
+                                                 src.FRAGMENT_POINT_LIGHT,
+        )
         #-----------------------------------------------
         # Prepare vertex buffer objects
         self.cube.create_vbo()
