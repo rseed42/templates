@@ -91,6 +91,9 @@ class Game(object):
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         # Viewport
         gl.glViewport(0,0,WND_SIZE[0], WND_SIZE[1])
+        # Is this enable by default?
+        gl.glEnable(gl.GL_CULL_FACE)
+        gl.glFrontFace(gl.GL_CCW)
         # Shaders
 
         vertex_shader = shader.Shader(src.VERTEX_SHADER, gl.GL_VERTEX_SHADER)
