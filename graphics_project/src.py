@@ -7,7 +7,7 @@ in vec4 VertexColor;
 out vec4 Color;
 void main(){
      gl_Position = ProjectionMatrix * ViewMatrix * ModelMatrix * VertexPosition;
-     Color = VertexCol;
+     Color = VertexColor;
 }
 """
 FRAGMENT_SIMPLE = """#version 130
