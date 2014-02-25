@@ -23,45 +23,17 @@ class Camera(object):
         return x/norm
 
     def view_matrix(self):
-        """ eye, target, up are 3-vectors in world space
+        """ World space -> Eye space transformation
         """
         # Calculate the orthonormal basis of eye space first
         f = self.normalize(self.p - self.e)
         s = np.cross(f, self.u)
         up = np.cross(s, f)
-#        print 'Basis:'
-#        print s
-#        print up
-#        print f
         # Rotate camera to be upright with respect to up and looks
         # along f
         R = np.identity(4, 'f')
-#        R[0:3, 0] = s
-#        R[0:3, 1] = up
-#        R[0:3, 2] = f
-#        print R
         R[0:3, 0:3] = np.array([s,up,f]).T
-#        print 'R:'
-#        print R
-
         T = np.identity(4, 'f')
-#        print '-e:', -self.e
-
         T[0:3, 0:4] = np.array([s,up,f,-self.e]).T
-#        print 'T:'
-#        print T
+        # There may be some room for optimization here
         return np.dot(T,R)
-
-#        mat[0,3] = 0
-#        return mat
-#        # Check the optimization later
-#        zaxis = self.normalize(self.eye - self.target)
-#        xaxis = self.normalize(np.cross(self.up, zaxis))
-#        yaxis = np.cross(zaxis, xaxis)
-#        orientation = np.identity(4, 'f')
-#        orientation[0:3,0] = xaxis
-#        orientation[0:3,1] = yaxis
-#        orientation[0:3,2] = zaxis
-#        translation = np.identity(4, 'f')
-#        translation[3,0:3] = -self.eye
-#        return np.dot(orientation, translation)

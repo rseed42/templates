@@ -46,5 +46,5 @@ class Model(object):
 
 
     def create_vbo(self):
-        self.vbo = vbo.VBO(self.data_array, usage=gl.GL_STATIC_DRAW)
 #        print self.data_array
+        self.vbo = vbo.VBO(self.data_array, usage=gl.GL_STATIC_DRAW)

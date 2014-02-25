@@ -1,6 +1,7 @@
 """ Explicit compilation and linkiing of shaders in Python. Same steps as in C++.
 """
 import sys
+import OpenGL
 import OpenGL.GL as gl
 from OpenGL.GL import shaders
 #-------------------------------------------------------------------------------

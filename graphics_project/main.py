@@ -56,18 +56,23 @@ class Game(object):
 #        trans.translate_x(0.4)
 #        trans.translate_y(20)
 #        trans.translate_z(-10)
-#        print trans.matrix
-        self.Model = trans.matrix
-        self.View = self.cam.view_matrix()
-        self.Projection = util.frustum(*self.viewbox)
-        self.Normal = np.identity(3, 'f')
-        self.Ambient = np.array([0.4,0.4,0.4,1], 'f')
-        self.LightColor = np.ones(3, 'f')
-        self.LightColor = np.array([0,0,1], 'f')
-        self.LightDirection = np.array([0,0,1], 'f')
-        self.HalfVector = np.array([0,0,-1], 'f')
-        self.Shininess = 0.8;
-        self.Strength = 1.;
+        self.ModelMatrix = trans.matrix
+        self.ViewMatrix = self.cam.view_matrix()
+        self.ProjectionMatrix = util.frustum(*self.viewbox)
+
+        # ----------- Light -------------
+        self.NormalMatrix = np.identity(3, 'f')
+        self.Ambient = np.array([0.2, 0.2, 0.2], 'f')
+        self.LightColor = np.array([1, 1, 1], 'f')
+        # Light position is a vec3, but needs to be transformed to eye space
+        light = np.array([1.0, 3.0, 2.0,1], 'f')
+        self.LightPosition = np.dot(self.ViewMatrix, light)[:-1]
+        self.Shininess = 0.2;
+        self.Strength = 1.0;
+        self.EyeDirection = np.array([0, 0, 1], 'f')
+        self.ConstantAttenuation = 0.3
+        self.LinearAttenuation = 0.2
+        self.QuadraticAttenuation = 0.2
 
         # Models (later to be scene graph)
         self.models = []
@@ -78,9 +83,6 @@ class Game(object):
                 model = self.load_model(os.path.join(pardir, subdir))
                 if not model: continue
                 self.models.append(model)
-        # Keep track of shaders/programs
-        self.shaders = {}
-        self.programs = {}
 
     def load_model(self, model_dir):
         """ Load model from object file
@@ -103,51 +105,50 @@ class Game(object):
         # Is this enable by default?
         gl.glEnable(gl.GL_CULL_FACE)
         gl.glFrontFace(gl.GL_CCW)
-        # Shaders
-
-        vertex_shader = shader.Shader(src.VERTEX_SHADER, gl.GL_VERTEX_SHADER)
-        vertex_shader.compile()
-        self.shaders['std_vertex_shader'] = vertex_shader
-        fragment_shader = shader.Shader(src.FRAGMENT_SHADER,
-                                        gl.GL_FRAGMENT_SHADER)
-        fragment_shader.compile()
-        self.shaders['std_fragment_shader'] = fragment_shader
-        vertex_shader_light = shader.Shader(src.VERTEX_SHADER_LIGHT,
-                                            gl.GL_VERTEX_SHADER)
-        vertex_shader_light.compile()
-        self.shaders['light_vertex'] = vertex_shader_light
-        fragment_shader_light = shader.Shader(src.FRAGMENT_SHADER_LIGHT,
-                                              gl.GL_FRAGMENT_SHADER)
-        fragment_shader_light.compile()
-        self.shaders['light_fragment'] = fragment_shader_light
-        #
-        program = shader.Program(vertex_shader_light, fragment_shader_light)
-
-
+        # ------------- Shaders -------------
+        vertex_point_light = shader.Shader(src.VERTEX_POINT_LIGHT,
+                                           gl.GL_VERTEX_SHADER)
+        vertex_point_light.compile()
+        fragment_point_light = shader.Shader(src.FRAGMENT_POINT_LIGHT,
+                                             gl.GL_FRAGMENT_SHADER)
+        fragment_point_light.compile()
+        # Attach to a program
+        program = shader.Program(vertex_point_light, fragment_point_light)
         # Before linking we need to bind attribute locations
-        program.bind_attrib_location(0, 'vPos')
-        program.bind_attrib_location(1, 'vCol')
-        program.bind_attrib_location(2, 'vNorm')
+        program.bind_attrib_location(0, 'VertexPosition')
+        program.bind_attrib_location(1, 'VertexNormal')
+        program.bind_attrib_location(2, 'VertexColor')
         # We are ready
         program.link()
-        self.programs['std_program'] = program
+        self.program = program
+        #-----------------------------------------------
         # Prepare vertex buffer objects
         for m in self.models:
             m.create_vbo()
         # Shader parameters
-        pid = self.programs['std_program'].program_id
-        self.uniforms['View'] =  gl.glGetUniformLocation(pid, 'View')
-        self.uniforms['Model'] =  gl.glGetUniformLocation(pid, 'Model')
-        self.uniforms['Projection'] = gl.glGetUniformLocation(pid, 'Projection')
-        self.uniforms['Normal'] = gl.glGetUniformLocation(pid, 'Normal')
+        pid = self.program.program_id
+        self.uniforms['ViewMatrix'] =  gl.glGetUniformLocation(pid,
+                                                               'ViewMatrix')
+        self.uniforms['ModelMatrix'] =  gl.glGetUniformLocation(pid,
+                                                                'ModelMatrix')
+        self.uniforms['ProjectionMatrix'] = gl.glGetUniformLocation(pid,
+                                                             'ProjectionMatrix')
+        self.uniforms['NormalMatrix'] = gl.glGetUniformLocation(pid,
+                                                                'NormalMatrix')
         self.uniforms['Ambient'] = gl.glGetUniformLocation(pid, 'Ambient')
         self.uniforms['LightColor'] = gl.glGetUniformLocation(pid, 'LightColor')
-        self.uniforms['LightDirection'] = gl.glGetUniformLocation(pid,
-                                                              'LightDirection')
-        self.uniforms['HalfVector'] = gl.glGetUniformLocation(pid, 'HalfVector')
+        self.uniforms['LightPosition'] = gl.glGetUniformLocation(pid,
+                                                              'LightPosition')
         self.uniforms['Shininess'] = gl.glGetUniformLocation(pid, 'Shininess')
         self.uniforms['Strength'] = gl.glGetUniformLocation(pid, 'Strength')
-
+        self.uniforms['EyeDirection'] = gl.glGetUniformLocation(pid,
+                                                                'EyeDirection')
+        self.uniforms['ConstantAttenuation'] = gl.glGetUniformLocation(pid,
+                                                          'ConstantAttenuation')
+        self.uniforms['LinearAttenuation'] = gl.glGetUniformLocation(pid,
+                                                            'LinearAttenuation')
+        self.uniforms['QuadraticAttenuation'] = gl.glGetUniformLocation(pid,
+                                                         'QuadraticAttenuation')
     #---------------------------------------
     # Init the whole system
     #---------------------------------------
@@ -192,30 +193,38 @@ class Game(object):
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         for m in self.models:
             # 1. Use shaders for this vbo
-            self.programs['std_program'].use()
+            self.program.use()
             # (location, count, transpose, value)
-            gl.glUniformMatrix4fv(self.uniforms['View'], 1, True, self.View)
-            gl.glUniformMatrix4fv(self.uniforms['Model'], 1, True, self.Model)
-            gl.glUniformMatrix4fv(self.uniforms['Projection'], 1, True,
-                                  self.Projection)
-            gl.glUniformMatrix3fv(self.uniforms['Normal'], 1, True,
-                                  self.Normal)
-            gl.glUniform4f(self.uniforms['Ambient'], *self.Ambient)
+            gl.glUniformMatrix4fv(self.uniforms['ViewMatrix'], 1, True,
+                                  self.ViewMatrix)
+            gl.glUniformMatrix4fv(self.uniforms['ModelMatrix'], 1, True,
+                                  self.ModelMatrix)
+            gl.glUniformMatrix4fv(self.uniforms['ProjectionMatrix'], 1, True,
+                                  self.ProjectionMatrix)
+            gl.glUniformMatrix3fv(self.uniforms['NormalMatrix'], 1, True,
+                                  self.NormalMatrix)
+            gl.glUniform3f(self.uniforms['Ambient'], *self.Ambient)
             gl.glUniform3f(self.uniforms['LightColor'], *self.LightColor)
-            gl.glUniform3f(self.uniforms['LightDirection'],
-                                         *self.LightDirection)
-            gl.glUniform3f(self.uniforms['HalfVector'], *self.HalfVector)
+            gl.glUniform3f(self.uniforms['LightPosition'],
+                                         *self.LightPosition)
             gl.glUniform1f(self.uniforms['Shininess'], self.Shininess)
             gl.glUniform1f(self.uniforms['Strength'], self.Strength)
+            gl.glUniform3f(self.uniforms['EyeDirection'], *self.EyeDirection)
 
+            gl.glUniform1f(self.uniforms['ConstantAttenuation'],
+                           self.ConstantAttenuation)
+            gl.glUniform1f(self.uniforms['LinearAttenuation'],
+                           self.LinearAttenuation)
+            gl.glUniform1f(self.uniforms['QuadraticAttenuation'],
+                           self.QuadraticAttenuation)
             # Bind vbo
             m.vbo.bind()
             gl.glEnableVertexAttribArray(0)
             gl.glEnableVertexAttribArray(1)
             gl.glEnableVertexAttribArray(2)
-            gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,48,m.vbo)
-            gl.glVertexAttribPointer(1,4,gl.GL_FLOAT,gl.GL_FALSE,48,m.vbo+16)
-            gl.glVertexAttribPointer(2,4,gl.GL_FLOAT,gl.GL_FALSE,48,m.vbo+32)
+            gl.glVertexAttribPointer(0,4,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo)
+            gl.glVertexAttribPointer(1,3,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo+16)
+            gl.glVertexAttribPointer(2,4,gl.GL_FLOAT,gl.GL_FALSE,44,m.vbo+28)
             # Draw primitive
             gl.glDrawArrays(gl.GL_TRIANGLES, m.start_id, m.end_id)
             m.vbo.unbind()
